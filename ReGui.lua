@@ -1,3 +1,4 @@
+
 --[[
 
       _       ,-'REGUI`-._
@@ -1217,6 +1218,7 @@ function ReGui:Init(Overwrites)
 		Initialised = true,
 		HasGamepad = self:IsConsoleDevice(),
 		HasTouchScreen = self:IsMobileDevice(),
+		WindowFocusesEnabled = true,
 	})
 
 	--// Fetch folders
@@ -1303,44 +1305,639 @@ function ReGui:GetScreenSize(): Vector2
 	return workspace.CurrentCamera.ViewportSize
 end
 
+function ReGui:BuildPrefabs(): Folder
+	local PlayerGui = self.PlayerGui
+	local Root = Instance.new("Folder")
+	Root.Name = "ReGui-Prefabs"
+	local Prefabs = Instance.new("Folder", Root)
+	Prefabs.Name = "Prefabs"
+
+	local function make(class, name, props)
+		local o = Instance.new(class)
+		o.Name = name
+		if props then
+			for k,v in props do pcall(function() o[k]=v end) end
+		end
+		return o
+	end
+	local function frame(name, props)
+		local o = make("Frame", name, props)
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromScale(1,0)
+		o.AutomaticSize = Enum.AutomaticSize.Y
+		if props then for k,v in props do pcall(function() o[k]=v end) end end
+		return o
+	end
+	local function list(parent, fill, pad)
+		local l = make("UIListLayout","UIListLayout")
+		l.SortOrder = Enum.SortOrder.LayoutOrder
+		l.FillDirection = fill or Enum.FillDirection.Vertical
+		l.Padding = pad or UDim.new(0,4)
+		l.Parent = parent
+		return l
+	end
+	local function stroke(parent)
+		local s = make("UIStroke","UIStroke")
+		s.Transparency = 0.8
+		s.Color = Color3.fromRGB(172,171,175)
+		s.Parent = parent
+		return s
+	end
+	local function corner(parent, r)
+		local c = make("UICorner","UICorner")
+		c.CornerRadius = r or UDim.new(0,4)
+		c.Parent = parent
+		return c
+	end
+	local function txt(name, props)
+		local o = make("TextLabel",name)
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.TextColor3 = Color3.fromRGB(240,240,240)
+		o.FontFace = Font.fromName("Inconsolata")
+		o.TextSize = 13
+		o.Size = UDim2.fromScale(1,0)
+		o.AutomaticSize = Enum.AutomaticSize.Y
+		if props then for k,v in props do pcall(function() o[k]=v end) end end
+		return o
+	end
+	local function btn(name, props)
+		local o = make("TextButton",name)
+		o.BackgroundTransparency = 0.7
+		o.BackgroundColor3 = Color3.fromRGB(50,150,250)
+		o.BorderSizePixel = 0
+		o.TextColor3 = Color3.fromRGB(240,240,240)
+		o.FontFace = Font.fromName("Inconsolata")
+		o.TextSize = 13
+		o.AutoButtonColor = false
+		o.Size = UDim2.fromScale(1,0)
+		o.AutomaticSize = Enum.AutomaticSize.Y
+		if props then for k,v in props do pcall(function() o[k]=v end) end end
+		return o
+	end
+
+	-- Container
+	do
+		local o = make("ScreenGui","Container")
+		o.ResetOnSpawn = false
+		o.IgnoreGuiInset = true
+		local windows = frame("Windows")
+		windows.Size = UDim2.fromScale(1,1)
+		windows.AutomaticSize = Enum.AutomaticSize.None
+		windows.Parent = o
+		local overlays = frame("Overlays")
+		overlays.Size = UDim2.fromScale(1,1)
+		overlays.AutomaticSize = Enum.AutomaticSize.None
+		overlays.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Window
+	do
+		local o = make("Frame","Window")
+		o.BackgroundColor3 = Color3.fromRGB(15,19,24)
+		o.BackgroundTransparency = 0.05
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromOffset(400,300)
+		o.ClipsDescendants = false
+		stroke(o)
+		corner(o)
+		local content = frame("Content")
+		content.Size = UDim2.fromScale(1,1)
+		content.AutomaticSize = Enum.AutomaticSize.None
+		content.Parent = o
+		local titlebar = frame("TitleBar")
+		titlebar.BackgroundTransparency = 0
+		titlebar.BackgroundColor3 = Color3.fromRGB(15,19,24)
+		titlebar.Size = UDim2.new(1,0,0,24)
+		titlebar.AutomaticSize = Enum.AutomaticSize.None
+		titlebar.BorderSizePixel = 0
+		titlebar.ZIndex = 3
+		corner(titlebar)
+		list(titlebar, Enum.FillDirection.Horizontal, UDim.new(0,2))
+		titlebar.Parent = content
+		o.Parent = Prefabs
+	end
+	-- Canvas
+	do
+		local o = frame("Canvas")
+		o.Size = UDim2.fromScale(1,1)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		list(o)
+		o.Parent = Prefabs
+	end
+	-- ScrollingCanvas
+	do
+		local o = make("ScrollingFrame","ScrollingCanvas")
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromScale(1,1)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.ScrollBarThickness = 4
+		o.CanvasSize = UDim2.new()
+		o.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		list(o)
+		o.Parent = Prefabs
+	end
+	-- Overlay / OverlayScroll
+	for _, name in {"Overlay","OverlayScroll"} do
+		local o = make("ScrollingFrame",name)
+		o.BackgroundColor3 = Color3.fromRGB(15,19,24)
+		o.BackgroundTransparency = 0
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromOffset(0,0)
+		o.AutomaticSize = Enum.AutomaticSize.XY
+		o.ScrollBarThickness = 4
+		o.CanvasSize = UDim2.new()
+		o.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		stroke(o)
+		corner(o)
+		local cf = frame("ContentFrame")
+		list(cf)
+		cf.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Label
+	do
+		local o = txt("Label")
+		local p = make("UIPadding","UIPadding")
+		p.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Button
+	do
+		local o = btn("Button")
+		corner(o)
+		o.Parent = Prefabs
+	end
+	-- ArrowButton
+	do
+		local o = btn("ArrowButton")
+		o.Text = ""
+		o.Size = UDim2.fromOffset(21,21)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		corner(o)
+		local icon = make("ImageLabel","Icon")
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromScale(1,1)
+		icon.Image = "rbxassetid://6034818372"
+		icon.Parent = o
+		local pad = make("UIPadding","UIPadding")
+		pad.Parent = o
+		o.Parent = Prefabs
+	end
+	-- RadioButton
+	do
+		local o = btn("RadioButton")
+		o.Text = ""
+		o.BackgroundTransparency = 1
+		o.BackgroundColor3 = Color3.fromRGB(50,150,250)
+		o.Size = UDim2.fromOffset(21,21)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		corner(o, UDim.new(1,0))
+		local icon = make("ImageLabel","Icon")
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromScale(0.7,0.7)
+		icon.AnchorPoint = Vector2.new(0.5,0.5)
+		icon.Position = UDim2.fromScale(0.5,0.5)
+		icon.Image = "rbxassetid://6034818372"
+		icon.Parent = o
+		local pad = make("UIPadding","UIPadding")
+		pad.Parent = o
+		o.Parent = Prefabs
+	end
+	-- CheckBox
+	do
+		local o = btn("CheckBox")
+		o.Text = ""
+		o.BackgroundTransparency = 1
+		o.Size = UDim2.fromOffset(0,19)
+		o.AutomaticSize = Enum.AutomaticSize.X
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,4))
+		local tickbox = btn("Tickbox")
+		tickbox.Text = ""
+		tickbox.Size = UDim2.fromOffset(15,15)
+		tickbox.AutomaticSize = Enum.AutomaticSize.None
+		tickbox.BackgroundColor3 = Color3.fromRGB(30,66,115)
+		tickbox.BackgroundTransparency = 0.4
+		corner(tickbox)
+		local p = make("UIPadding","UIPadding")
+		p.Parent = tickbox
+		local tick = make("ImageLabel","Tick")
+		tick.BackgroundTransparency = 1
+		tick.Size = UDim2.fromScale(0,0)
+		tick.AnchorPoint = Vector2.new(0.5,0.5)
+		tick.Position = UDim2.fromScale(0.5,0.5)
+		tick.ImageColor3 = Color3.fromRGB(50,150,250)
+		tick.Parent = tickbox
+		tickbox.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Slider
+	do
+		local o = frame("Slider")
+		o.Size = UDim2.new(0.7,0,0,19)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.BackgroundColor3 = Color3.fromRGB(30,66,115)
+		o.BackgroundTransparency = 0.4
+		o.BorderSizePixel = 0
+		local track = frame("Track")
+		track.Size = UDim2.new(1,0,1,0)
+		track.AutomaticSize = Enum.AutomaticSize.None
+		track.BackgroundTransparency = 1
+		local grab = frame("Grab")
+		grab.Name = "Grab"
+		grab.Size = UDim2.fromOffset(8,8)
+		grab.AutomaticSize = Enum.AutomaticSize.None
+		grab.BackgroundColor3 = Color3.fromRGB(50,150,250)
+		grab.AnchorPoint = Vector2.new(0.5,0.5)
+		grab.Position = UDim2.fromScale(0,0.5)
+		grab.BorderSizePixel = 0
+		corner(grab, UDim.new(1,0))
+		grab.Parent = track
+		local vt = txt("ValueText")
+		vt.Text = "0"
+		vt.TextXAlignment = Enum.TextXAlignment.Center
+		vt.Size = UDim2.fromScale(1,1)
+		vt.AutomaticSize = Enum.AutomaticSize.None
+		vt.Parent = track
+		track.Parent = o
+		corner(o)
+		o.Parent = Prefabs
+	end
+	-- InputBox
+	do
+		local o = frame("InputBox")
+		o.Size = UDim2.new(0.7,0,0,19)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,2))
+		local fr = frame("Frame")
+		fr.BackgroundColor3 = Color3.fromRGB(30,66,115)
+		fr.BackgroundTransparency = 0.4
+		fr.Size = UDim2.fromScale(1,0)
+		fr.AutomaticSize = Enum.AutomaticSize.None
+		fr.BorderSizePixel = 0
+		local input = make("TextBox","Input")
+		input.BackgroundTransparency = 1
+		input.Size = UDim2.fromScale(1,1)
+		input.TextColor3 = Color3.fromRGB(240,240,240)
+		input.FontFace = Font.fromName("Inconsolata")
+		input.TextSize = 13
+		input.TextXAlignment = Enum.TextXAlignment.Left
+		input.ClearTextOnFocus = false
+		local p = make("UIPadding","UIPadding")
+		p.PaddingLeft = UDim.new(0,4)
+		p.Parent = input
+		input.Parent = fr
+		corner(fr)
+		list(fr, Enum.FillDirection.Horizontal, UDim.new(0,2))
+		fr.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Console
+	do
+		local o = make("ScrollingFrame","Console")
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.Size = UDim2.new(1,0,0,80)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.ScrollBarThickness = 4
+		o.CanvasSize = UDim2.new()
+		o.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		stroke(o)
+		corner(o)
+		local lines = txt("Lines")
+		lines.TextXAlignment = Enum.TextXAlignment.Right
+		lines.Size = UDim2.fromOffset(30,0)
+		lines.AutomaticSize = Enum.AutomaticSize.Y
+		lines.TextColor3 = Color3.fromRGB(240,240,240)
+		lines.Visible = false
+		lines.Parent = o
+		local source = make("TextBox","Source")
+		source.BackgroundTransparency = 1
+		source.Size = UDim2.new(1,0,0,0)
+		source.AutomaticSize = Enum.AutomaticSize.Y
+		source.TextColor3 = Color3.fromRGB(240,240,240)
+		source.FontFace = Font.fromName("Inconsolata")
+		source.TextSize = 13
+		source.TextXAlignment = Enum.TextXAlignment.Left
+		source.TextEditable = true
+		source.MultiLine = true
+		source.TextWrapped = false
+		source.ClearTextOnFocus = false
+		source.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Row
+	do
+		local o = frame("Row")
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,4))
+		o.Parent = Prefabs
+	end
+	-- List
+	do
+		local o = frame("List")
+		local l = make("UIListLayout","UIListLayout")
+		l.SortOrder = Enum.SortOrder.LayoutOrder
+		l.FillDirection = Enum.FillDirection.Horizontal
+		l.Padding = UDim.new(0,4)
+		l.HorizontalFlex = Enum.UIFlexAlignment.Fill
+		l.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Group
+	do
+		local o = frame("Group")
+		list(o)
+		o.Parent = Prefabs
+	end
+	-- Bullet
+	do
+		local o = frame("Bullet")
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,4))
+		local icon = make("ImageLabel","Icon")
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromOffset(5,5)
+		icon.AnchorPoint = Vector2.new(0,0.5)
+		icon.Image = "rbxassetid://6034818372"
+		icon.Parent = o
+		o.Parent = Prefabs
+	end
+	-- SeparatorText
+	do
+		local o = frame("SeparatorText")
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,4))
+		local left = frame("Left")
+		left.Size = UDim2.fromScale(0,1)
+		left.AutomaticSize = Enum.AutomaticSize.None
+		local flex = make("UIFlexItem","UIFlexItem")
+		flex.FlexMode = Enum.UIFlexMode.Fill
+		flex.Parent = left
+		left.BackgroundColor3 = Color3.fromRGB(172,171,175)
+		left.BackgroundTransparency = 0.5
+		left.AutomaticSize = Enum.AutomaticSize.None
+		left.Size = UDim2.new(1,0,0,1)
+		left.BorderSizePixel = 0
+		left.Name = "Left"
+		left.Parent = o
+		local right = left:Clone()
+		right.Name = "Right"
+		right.Parent = o
+		o.Parent = Prefabs
+	end
+	-- CollapsingHeader
+	do
+		local o = frame("CollapsingHeader")
+		list(o)
+		local titlebar = btn("TitleBar")
+		titlebar.Text = ""
+		titlebar.BackgroundColor3 = Color3.fromRGB(50,150,250)
+		titlebar.BackgroundTransparency = 0.7
+		titlebar.Size = UDim2.new(1,0,0,21)
+		titlebar.AutomaticSize = Enum.AutomaticSize.None
+		corner(titlebar)
+		local collapse = frame("Collapse")
+		collapse.Size = UDim2.fromOffset(16,16)
+		collapse.AutomaticSize = Enum.AutomaticSize.None
+		local collapseIcon = make("ImageLabel","CollapseIcon")
+		collapseIcon.BackgroundTransparency = 1
+		collapseIcon.Size = UDim2.fromScale(1,1)
+		collapseIcon.Image = "rbxassetid://6034818372"
+		collapseIcon.Parent = collapse
+		local cp = make("UIPadding","UIPadding")
+		cp.Parent = collapse
+		collapse.Parent = titlebar
+		local icon = make("ImageLabel","Icon")
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromOffset(16,16)
+		icon.Visible = false
+		icon.Parent = titlebar
+		list(titlebar, Enum.FillDirection.Horizontal, UDim.new(0,4))
+		titlebar.Parent = o
+		o.Parent = Prefabs
+	end
+	-- MenuBar
+	do
+		local o = frame("MenuBar")
+		o.BackgroundColor3 = Color3.fromRGB(28,39,53)
+		o.BackgroundTransparency = 0.1
+		o.Size = UDim2.new(1,0,0,24)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,0))
+		o.Parent = Prefabs
+	end
+	-- TabsBar
+	do
+		local o = frame("TabsBar")
+		list(o)
+		local tabsFrame = frame("TabsFrame")
+		list(tabsFrame, Enum.FillDirection.Horizontal, UDim.new(0,0))
+		tabsFrame.Size = UDim2.new(1,0,0,28)
+		tabsFrame.AutomaticSize = Enum.AutomaticSize.None
+		tabsFrame.Name = "TabsFrame"
+		tabsFrame.Parent = o
+		local sep = frame("Separator")
+		sep.BackgroundColor3 = Color3.fromRGB(50,150,250)
+		sep.BackgroundTransparency = 0
+		sep.Size = UDim2.new(1,0,0,1)
+		sep.AutomaticSize = Enum.AutomaticSize.None
+		sep.BorderSizePixel = 0
+		sep.Parent = o
+		o.Parent = Prefabs
+	end
+	-- TabButton
+	do
+		local o = frame("TabButton")
+		o.AutomaticSize = Enum.AutomaticSize.X
+		o.Size = UDim2.fromOffset(0,28)
+		local button = btn("Button")
+		button.BackgroundColor3 = Color3.fromRGB(30,66,115)
+		button.BackgroundTransparency = 0.4
+		button.Size = UDim2.fromOffset(0,28)
+		button.AutomaticSize = Enum.AutomaticSize.X
+		local label = txt("Label")
+		label.Size = UDim2.fromOffset(0,0)
+		label.AutomaticSize = Enum.AutomaticSize.XY
+		label.Parent = button
+		local p = make("UIPadding","UIPadding")
+		p.PaddingLeft = UDim.new(0,8)
+		p.PaddingRight = UDim.new(0,8)
+		p.PaddingTop = UDim.new(0,3)
+		p.PaddingBottom = UDim.new(0,8)
+		p.Parent = button
+		button.Parent = o
+		o.Parent = Prefabs
+	end
+	-- TabSelector
+	do
+		local o = frame("TabSelector")
+		list(o)
+		local body = make("ScrollingFrame","Body")
+		body.BackgroundTransparency = 1
+		body.BorderSizePixel = 0
+		body.Size = UDim2.fromScale(1,1)
+		body.AutomaticSize = Enum.AutomaticSize.None
+		body.ScrollBarThickness = 4
+		body.CanvasSize = UDim2.new()
+		body.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		local pageTemplate = frame("PageTemplate")
+		pageTemplate.Name = "PageTemplate"
+		pageTemplate.Visible = false
+		local p = make("UIPadding","UIPadding")
+		p.Parent = pageTemplate
+		pageTemplate.Parent = body
+		body.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Table
+	do
+		local o = frame("Table")
+		list(o)
+		local rowTemp = frame("RowTemp")
+		rowTemp.Name = "RowTemp"
+		rowTemp.Visible = false
+		rowTemp.Size = UDim2.new(1,0,0,0)
+		list(rowTemp, Enum.FillDirection.Horizontal, UDim.new(0,0))
+		local colTemp = frame("ColumnTemp")
+		colTemp.Name = "ColumnTemp"
+		colTemp.Visible = false
+		list(colTemp)
+		local s = make("UIStroke","UIStroke")
+		s.Enabled = false
+		s.Parent = colTemp
+		local p = make("UIPadding","UIPadding")
+		p.Parent = colTemp
+		colTemp.Parent = rowTemp
+		rowTemp.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Histogram
+	do
+		local o = frame("Histogram")
+		o.Size = UDim2.new(0.7,0,0,40)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.BackgroundColor3 = Color3.fromRGB(30,66,115)
+		o.BackgroundTransparency = 0.4
+		corner(o)
+		local canvas = frame("Canvas")
+		canvas.Name = "Canvas"
+		canvas.Size = UDim2.fromScale(1,1)
+		canvas.AutomaticSize = Enum.AutomaticSize.None
+		list(canvas, Enum.FillDirection.Horizontal, UDim.new(0,1))
+		local pt = frame("PointTemplate")
+		pt.Name = "PointTemplate"
+		pt.Visible = false
+		pt.Size = UDim2.fromScale(1,1)
+		pt.AutomaticSize = Enum.AutomaticSize.None
+		local bar = frame("Bar")
+		bar.BackgroundColor3 = Color3.fromRGB(230,180,0)
+		bar.BackgroundTransparency = 0
+		bar.Size = UDim2.fromScale(1,0.5)
+		bar.AutomaticSize = Enum.AutomaticSize.None
+		bar.AnchorPoint = Vector2.new(0,1)
+		bar.Position = UDim2.fromScale(0,1)
+		bar.BorderSizePixel = 0
+		bar.Parent = pt
+		pt.Parent = canvas
+		canvas.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Combo
+	do
+		local o = frame("Combo")
+		list(o, Enum.FillDirection.Horizontal, UDim.new(0,4))
+		local combo = btn("Combo")
+		combo.Name = "Combo"
+		combo.BackgroundColor3 = Color3.fromRGB(30,66,115)
+		combo.BackgroundTransparency = 0.4
+		combo.Size = UDim2.fromScale(0.7,0)
+		combo.AutomaticSize = Enum.AutomaticSize.Y
+		list(combo, Enum.FillDirection.Horizontal, UDim.new(0,2))
+		corner(combo)
+		combo.Parent = o
+		o.Parent = Prefabs
+	end
+	-- Image
+	do
+		local o = make("ImageButton","Image")
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromOffset(50,50)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.Parent = Prefabs
+	end
+	-- VideoPlayer
+	do
+		local o = make("VideoFrame","VideoPlayer")
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromOffset(200,112)
+		o.Parent = Prefabs
+	end
+	-- Viewport
+	do
+		local o = frame("Viewport")
+		o.Size = UDim2.fromOffset(100,100)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		local vp = make("ViewportFrame","Viewport")
+		vp.BackgroundTransparency = 1
+		vp.Size = UDim2.fromScale(1,1)
+		vp.AutomaticSize = Enum.AutomaticSize.None
+		local wm = Instance.new("WorldModel")
+		wm.Name = "WorldModel"
+		wm.Parent = vp
+		vp.Parent = o
+		o.Parent = Prefabs
+	end
+	-- ResizeGrab
+	do
+		local o = make("TextButton","ResizeGrab")
+		o.Text = "//"
+		o.BackgroundTransparency = 1
+		o.BorderSizePixel = 0
+		o.Size = UDim2.fromOffset(16,16)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.AnchorPoint = Vector2.new(1,1)
+		o.Position = UDim2.fromScale(1,1)
+		o.TextColor3 = Color3.fromRGB(50,150,250)
+		o.TextTransparency = 0.6
+		o.FontFace = Font.fromName("Inconsolata")
+		o.TextSize = 13
+		o.ZIndex = 10
+		o.Parent = Prefabs
+	end
+	-- ModalEffect
+	do
+		local o = frame("ModalEffect")
+		o.BackgroundColor3 = Color3.fromRGB(230,230,230)
+		o.BackgroundTransparency = 1
+		o.Size = UDim2.fromScale(1,1)
+		o.AutomaticSize = Enum.AutomaticSize.None
+		o.BorderSizePixel = 0
+		o.Parent = Prefabs
+	end
+
+	Root.Parent = PlayerGui
+	return Root
+end
+
 function ReGui:LoadPrefabs(): Folder?
 	local PlayerGui = self.PlayerGui
 	local Name = "ReGui-Prefabs"
 
-	local ScriptUi = nil
+	-- Try script child
+	local ok, result = pcall(function() return script:WaitForChild(Name, 1) end)
+	if ok and result then return result end
 
-	if typeof(script) == "Instance" then
-		local ok, result = pcall(function()
-			return script:WaitForChild(Name, 2)
-		end)
-
-		if ok then
-			ScriptUi = result
-		end
-	end
-
-	if ScriptUi then
-		return ScriptUi
-	end
-
-	local PlayerUI = nil
-
+	-- Try PlayerGui
 	if PlayerGui then
-		local ok, result = pcall(function()
-			return PlayerGui:WaitForChild(Name, 2)
-		end)
-
-		if ok then
-			PlayerUI = result
-		end
+		local ok2, result2 = pcall(function() return PlayerGui:WaitForChild(Name, 1) end)
+		if ok2 and result2 then return result2 end
 	end
 
-	if PlayerUI then
-		return PlayerUI
-	end
-
-	warn("[ReGui] ReGui-Prefabs folder not found")
-	return nil
+	-- Build prefabs from code
+	warn("[ReGui] ReGui-Prefabs not found, building from code")
+	return self:BuildPrefabs()
 end
 
 function ReGui:ResolveUIParent(): GuiObject?
@@ -1452,9 +2049,9 @@ function ReGui:ConnectMouseEvent(Object: GuiObject, Config)
 		HoverSignal = self:DetectHover(OnlyMouseHovering)
 	end
 
-	Object.Activated:Connect(function(...)
+	local function Fire(...)
 		local ClickTick = tick()
-		local ClickRange = ClickTick-LastClick
+		local ClickRange = ClickTick - LastClick
 
 		--// OnlyMouseHovering
 		if HoverSignal and not HoverSignal.Hovering then return end
@@ -1468,7 +2065,25 @@ function ReGui:ConnectMouseEvent(Object: GuiObject, Config)
 			LastClick = 0
 		end
 
-		Callback(...)
+		if Callback then
+			Callback(...)
+		end
+	end
+
+	-- TextButton/ImageButton possuem Activated.
+	-- Frame não possui Activated, então usamos InputBegan como fallback.
+	local ok, Activated = pcall(function()
+		return Object.Activated
+	end)
+
+	if ok and Activated then
+		Activated:Connect(Fire)
+		return
+	end
+
+	Object.InputBegan:Connect(function(Input)
+		if not ReGui:IsMouseEvent(Input, true) then return end
+		Fire(Input)
 	end)
 end
 
@@ -7166,14 +7781,16 @@ function WindowClass:SetCollapsed(Collapsed: boolean, NoAnimation: false): Windo
 	})
 
 	--// ResizeGrab
-	self:Tween({
-		Object = ResizeGrab,
-		NoAnimation = NoAnimation,
-		EndProperties = {
-			TextTransparency = Collapsed and 1 or 0.6,
-			Interactable = not Collapsed
-		}
-	})
+	if ResizeGrab then
+		self:Tween({
+			Object = ResizeGrab,
+			NoAnimation = NoAnimation,
+			EndProperties = {
+				TextTransparency = Collapsed and 1 or 0.6,
+				Interactable = not Collapsed
+			}
+		})
+	end
 
 	return self
 end
@@ -7232,7 +7849,10 @@ function WindowClass:UpdateConfig(Config)
 		end,
 		NoResize = function(Value)
 			local Drag = self.ResizeConnection
-			Drag:SetEnabled(not Value)
+
+			if Drag and Drag.SetEnabled then
+				Drag:SetEnabled(not Value)
+			end
 		end,
 		NoBackground = function(Value)
 			local Transparency = self:GetThemeKey("WindowBgTransparency")
@@ -7378,56 +7998,9 @@ ReGui:DefineElement("Window", {
 		end
 
 		--// Create Window frame
-        --// Create Window frame safely
-        local Window = Instance.new("Frame")
-        Window.Name = Config.Name or "Window"
-        Window.Size = Config.Size or UDim2.fromOffset(600, 400)
-        Window.Position = Config.Position or UDim2.fromOffset(100, 100)
-        Window.AnchorPoint = Config.AnchorPoint or Vector2.new(0, 0)
-        Window.BackgroundColor3 = Color3.fromRGB(15, 19, 24)
-        Window.BackgroundTransparency = 0.05
-        Window.BorderSizePixel = 0
-        Window.Visible = Config.Visible ~= false
-        Window.ZIndex = Config.ZIndex or 1
-        Window.Parent = Config.Parent
-
-        local Stroke = Instance.new("UIStroke")
-        Stroke.Name = "Border"
-        Stroke.Transparency = 0.8
-        Stroke.Color = Color3.fromRGB(172, 171, 175)
-        Stroke.Parent = Window
-
-        local Corner = Instance.new("UICorner")
-        Corner.CornerRadius = UDim.new(0, 4)
-        Corner.Parent = Window
-
-        local ContentFrame = Instance.new("Frame")
-        ContentFrame.Name = "Content"
-        ContentFrame.Size = UDim2.fromScale(1, 1)
-        ContentFrame.BackgroundTransparency = 1
-        ContentFrame.ZIndex = Window.ZIndex
-        ContentFrame.Parent = Window
-
-        local TitleBar = Instance.new("Frame")
-        TitleBar.Name = "TitleBar"
-        TitleBar.Size = UDim2.new(1, 0, 0, 24)
-        TitleBar.BackgroundColor3 = Color3.fromRGB(15, 19, 24)
-        TitleBar.BorderSizePixel = 0
-        TitleBar.ZIndex = Window.ZIndex + 2
-        TitleBar.Parent = ContentFrame
-
-        local TitleLabel = Instance.new("TextLabel")
-        TitleLabel.Name = "Title"
-        TitleLabel.Size = UDim2.new(1, -50, 1, 0)
-        TitleLabel.Position = UDim2.fromOffset(8, 0)
-        TitleLabel.BackgroundTransparency = 1
-        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        TitleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
-        TitleLabel.FontFace = Font.fromName("Inconsolata")
-        TitleLabel.TextSize = 13
-        TitleLabel.Text = tostring(Config.Title or ReGui.DefaultTitle)
-        TitleLabel.ZIndex = TitleBar.ZIndex + 1
-        TitleLabel.Parent = TitleBar
+		local Window: CanvasGroup = ReGui:InsertPrefab("Window", Config)
+		local ContentFrame: Frame = Window.Content
+		local TitleBar: Frame = ContentFrame.TitleBar
 
 		--// Create window class
 		local Class = NewClass(WindowClass)
@@ -7447,12 +8020,6 @@ ReGui:DefineElement("Window", {
 			--NoStyle = true
 		}))
 
-		--// Safe window titlebar offset
-		if CanvasFrame then
-			CanvasFrame.Position = UDim2.fromOffset(0, 24)
-			CanvasFrame.Size = UDim2.new(1, 0, 1, -24)
-			CanvasFrame.ZIndex = (Window.ZIndex or 1) + 1
-		end
 		
 		--// Make the window resizable
         local ResizeConnection = nil
@@ -7706,12 +8273,12 @@ ReGui:DefineElement("PopupCanvas", {
 			Object:Remove()
 		end
 
-		function Config:SetPopupVisible(Visible: boolean, NoAnim: boolean?, Wait: boolean?)
+		function Config:SetPopupVisible(Visible: boolean, Wait: boolean?)
 			--// Check if the visiblity is the same
 			if Object.Visible == Visible then return end
 			
 			RelativeTo.Interactable = not Visible
-			self:UpdateScales(Visible, NoAnim, Wait)
+			self:UpdateScales(Visible, NoAnimation, Wait)
 			self.Visible = Visible
 		end
 		
@@ -7745,9 +8312,7 @@ ReGui:DefineElement("PopupCanvas", {
 		Config:UpdateScales(false, true)
 		Config:SetPopupVisible(Visible)
 		
-		Canvas.OnChildChange:Connect(function()
-			Config:UpdateScales()
-		end)
+		Canvas.OnChildChange:Connect(Config.UpdateScales)
 
 		return Canvas, Object
 	end,
