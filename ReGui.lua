@@ -7388,6 +7388,7 @@ ReGui:DefineElement("Window", {
         Window.BackgroundTransparency = 0.05
         Window.BorderSizePixel = 0
         Window.Visible = Config.Visible ~= false
+        Window.ZIndex = Config.ZIndex or 1
         Window.Parent = Config.Parent
 
         local Stroke = Instance.new("UIStroke")
@@ -7404,6 +7405,7 @@ ReGui:DefineElement("Window", {
         ContentFrame.Name = "Content"
         ContentFrame.Size = UDim2.fromScale(1, 1)
         ContentFrame.BackgroundTransparency = 1
+        ContentFrame.ZIndex = Window.ZIndex
         ContentFrame.Parent = Window
 
         local TitleBar = Instance.new("Frame")
@@ -7411,6 +7413,7 @@ ReGui:DefineElement("Window", {
         TitleBar.Size = UDim2.new(1, 0, 0, 24)
         TitleBar.BackgroundColor3 = Color3.fromRGB(15, 19, 24)
         TitleBar.BorderSizePixel = 0
+        TitleBar.ZIndex = Window.ZIndex + 2
         TitleBar.Parent = ContentFrame
 
         local TitleLabel = Instance.new("TextLabel")
@@ -7423,6 +7426,7 @@ ReGui:DefineElement("Window", {
         TitleLabel.FontFace = Font.fromName("Inconsolata")
         TitleLabel.TextSize = 13
         TitleLabel.Text = tostring(Config.Title or ReGui.DefaultTitle)
+        TitleLabel.ZIndex = TitleBar.ZIndex + 1
         TitleLabel.Parent = TitleBar
 
 		--// Create window class
@@ -7442,6 +7446,13 @@ ReGui:DefineElement("Window", {
 			CornerRadius = UDim.new(0, 0),
 			--NoStyle = true
 		}))
+
+		--// Safe window titlebar offset
+		if CanvasFrame then
+			CanvasFrame.Position = UDim2.fromOffset(0, 24)
+			CanvasFrame.Size = UDim2.new(1, 0, 1, -24)
+			CanvasFrame.ZIndex = (Window.ZIndex or 1) + 1
+		end
 		
 		--// Make the window resizable
         local ResizeConnection = nil
@@ -7451,9 +7462,15 @@ ReGui:DefineElement("Window", {
                 MinimumSize = MinimumSize,
                 Resize = Window,
                 OnUpdate = function(Size)
-                    Config:SetSize(Size)
+                    Class:SetSize(Size, true)
                 end
             })
+        end
+
+        local ResizeGrab = nil
+
+        if ResizeConnection then
+            ResizeGrab = ResizeConnection.Grab
         end
 
 		--// Merge tables
@@ -7462,7 +7479,7 @@ ReGui:DefineElement("Window", {
 			WindowFrame = Window,  
 			ContentFrame = ContentFrame,
 			CanvasFrame = CanvasFrame,
-			ResizeGrab = ResizeConnection.Grab,
+			ResizeGrab = ResizeGrab,
 			TitleBar = TitleBar,
 			Elements = Elements,
 			TagsList = {},
@@ -7549,14 +7566,20 @@ ReGui:DefineElement("Window", {
 		Class:SetFocused()
 
 		--// Register elements into Window Class
-		local ResizeGrab = ResizeConnection.Grab
-		ReGui:SetAnimation(ResizeGrab, "TextButtons")
+		if ResizeGrab then
+			ReGui:SetAnimation(ResizeGrab, "TextButtons")
+		end
 
-		WindowClass:TagElements({
-			[ResizeGrab] = "ResizeGrab",
+		local WindowTags = {
 			[TitleBar] = "TitleBar",
 			[CanvasFrame] = "Window"
-		})
+		}
+
+		if ResizeGrab then
+			WindowTags[ResizeGrab] = "ResizeGrab"
+		end
+
+		WindowClass:TagElements(WindowTags)
 
 		--// Append to Windows array
 		if not NoWindowRegistor then
