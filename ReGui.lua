@@ -52,7 +52,7 @@ local ReGui = {
 	IniSettings = {},
 	AnimationConnections = {}
 }
-local ArrowAsset = "rbxasset://textures/DeveloperFramework/button_arrow_right.png"
+local ArrowAsset = "rbxassetid://6034818372"
 
 ReGui.Icons = {
 	Dot = ArrowAsset,
@@ -5656,7 +5656,7 @@ ReGui:DefineElement("SliderBase", {
 		local Disabled = Config.Disabled
 
 		--// Create slider element
-		local Object = ReGui:InsertPrefab("Slider")
+		local Object = ReGui:InsertPrefab("Slider", Config)
 		local Track = Object.Track
 		local Grab = Track.Grab
 		local ValueText = Track.ValueText
@@ -5933,7 +5933,7 @@ ReGui:DefineElement("DragInt", {
 		local Disabled = Config.Disabled
 
 		--// Create slider element
-		local Object = ReGui:InsertPrefab("Slider")
+		local Object = ReGui:InsertPrefab("Slider", Config)
 		local Class = ReGui:MergeMetatables(Config, Object)
 
 		local Track = Object.Track
@@ -7706,12 +7706,12 @@ ReGui:DefineElement("PopupCanvas", {
 			Object:Remove()
 		end
 
-		function Config:SetPopupVisible(Visible: boolean, Wait: boolean?)
+		function Config:SetPopupVisible(Visible: boolean, NoAnim: boolean?, Wait: boolean?)
 			--// Check if the visiblity is the same
 			if Object.Visible == Visible then return end
 			
 			RelativeTo.Interactable = not Visible
-			self:UpdateScales(Visible, NoAnimation, Wait)
+			self:UpdateScales(Visible, NoAnim, Wait)
 			self.Visible = Visible
 		end
 		
@@ -7745,7 +7745,9 @@ ReGui:DefineElement("PopupCanvas", {
 		Config:UpdateScales(false, true)
 		Config:SetPopupVisible(Visible)
 		
-		Canvas.OnChildChange:Connect(Config.UpdateScales)
+		Canvas.OnChildChange:Connect(function()
+			Config:UpdateScales()
+		end)
 
 		return Canvas, Object
 	end,
