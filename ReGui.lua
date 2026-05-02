@@ -7378,9 +7378,52 @@ ReGui:DefineElement("Window", {
 		end
 
 		--// Create Window frame
-		local Window: CanvasGroup = ReGui:InsertPrefab("Window", Config)
-		local ContentFrame: Frame = Window.Content
-		local TitleBar: Frame = ContentFrame.TitleBar
+        --// Create Window frame safely
+        local Window = Instance.new("Frame")
+        Window.Name = Config.Name or "Window"
+        Window.Size = Config.Size or UDim2.fromOffset(600, 400)
+        Window.Position = Config.Position or UDim2.fromOffset(100, 100)
+        Window.AnchorPoint = Config.AnchorPoint or Vector2.new(0, 0)
+        Window.BackgroundColor3 = Color3.fromRGB(15, 19, 24)
+        Window.BackgroundTransparency = 0.05
+        Window.BorderSizePixel = 0
+        Window.Visible = Config.Visible ~= false
+        Window.Parent = Config.Parent
+
+        local Stroke = Instance.new("UIStroke")
+        Stroke.Name = "Border"
+        Stroke.Transparency = 0.8
+        Stroke.Color = Color3.fromRGB(172, 171, 175)
+        Stroke.Parent = Window
+
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 4)
+        Corner.Parent = Window
+
+        local ContentFrame = Instance.new("Frame")
+        ContentFrame.Name = "Content"
+        ContentFrame.Size = UDim2.fromScale(1, 1)
+        ContentFrame.BackgroundTransparency = 1
+        ContentFrame.Parent = Window
+
+        local TitleBar = Instance.new("Frame")
+        TitleBar.Name = "TitleBar"
+        TitleBar.Size = UDim2.new(1, 0, 0, 24)
+        TitleBar.BackgroundColor3 = Color3.fromRGB(15, 19, 24)
+        TitleBar.BorderSizePixel = 0
+        TitleBar.Parent = ContentFrame
+
+        local TitleLabel = Instance.new("TextLabel")
+        TitleLabel.Name = "Title"
+        TitleLabel.Size = UDim2.new(1, -50, 1, 0)
+        TitleLabel.Position = UDim2.fromOffset(8, 0)
+        TitleLabel.BackgroundTransparency = 1
+        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        TitleLabel.TextColor3 = Color3.fromRGB(240, 240, 240)
+        TitleLabel.FontFace = Font.fromName("Inconsolata")
+        TitleLabel.TextSize = 13
+        TitleLabel.Text = tostring(Config.Title or ReGui.DefaultTitle)
+        TitleLabel.Parent = TitleBar
 
 		--// Create window class
 		local Class = NewClass(WindowClass)
