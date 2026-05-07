@@ -1,4 +1,3 @@
-
 --[[
 
       _       ,-'REGUI`-._
@@ -987,6 +986,8 @@ function Animation:HeaderCollapseToggle(Data: HeaderCollapseToggle)
 	local Rotations = Data.Rotations
 	local Collapsed = Data.Collapsed
 	local Tweeninfo = Data.Tweeninfo
+
+	if not Toggle then return end -- guard: no icon when NoDefaultTitleBarButtons=true
 
 	local Rotation = Collapsed and Rotations.Closed or Rotations.Open
 
@@ -7544,7 +7545,9 @@ function WindowClass:GetTitleBarSizeY(): number
 end
 
 function WindowClass:SetTitle(Text: string?): WindowClass
-	self.TitleLabel.Text = tostring(Text)
+	if self.TitleLabel then
+		self.TitleLabel.Text = tostring(Text)
+	end
 	return self
 end
 
@@ -7652,25 +7655,21 @@ function WindowClass:SetFocusedColors(State: string)
 		Focused = {
 			[Border] = "BorderActive",
 			[TitleBar] = "TitleBarBgActive",
-			[TitleLabel] = {
-				TextColor3 = "TitleActive"
-			}
 		},
 		UnFocused = {
 			[Border] = "Border",
 			[TitleBar] = "TitleBarBg",
-			[TitleLabel] = {
-				TextColor3 = "Title"
-			}
 		},
 		Collapsed = {
 			[Border] = "Border",
 			[TitleBar] = "TitleBarBgCollapsed",
-			[TitleLabel] = {
-				TextColor3 = "Title"
-			}
 		}
 	}
+	if TitleLabel then
+		Tags.Focused[TitleLabel]   = { TextColor3 = "TitleActive" }
+		Tags.UnFocused[TitleLabel] = { TextColor3 = "Title" }
+		Tags.Collapsed[TitleLabel] = { TextColor3 = "Title" }
+	end
 	
 	--// Update colors
 	ReGui:MultiUpdateColors({
@@ -7754,7 +7753,7 @@ function WindowClass:SetCollapsed(Collapsed: boolean, NoAnimation: false): Windo
 	local WindowSize = self:GetWindowSize()
 	local TitleBarSizeY = self:GetTitleBarSizeY()
 
-	local ToggleIcon = Toggle.Icon
+	local ToggleIcon = Toggle and Toggle.Icon
 	local ClosedSize = UDim2.fromOffset(WindowSize.X, TitleBarSizeY)
 
 	self.Collapsed = Collapsed
@@ -7803,11 +7802,11 @@ function WindowClass:UpdateConfig(Config)
 		end,
 		NoClose = function(Value)
 			local Object = self.CloseButton
-			Object.Visible = not Value
+			if Object then Object.Visible = not Value end
 		end,
 		NoCollapse = function(Value)
 			local Object = self.Toggle
-			Object.Visible = not Value
+			if Object then Object.Visible = not Value end
 		end,
 		NoTabsBar = function(Value)
 			local Object = self.WindowTabSelector
@@ -8312,7 +8311,7 @@ ReGui:DefineElement("PopupCanvas", {
 		Config:UpdateScales(false, true)
 		Config:SetPopupVisible(Visible)
 		
-		Canvas.OnChildChange:Connect(Config.UpdateScales)
+		Canvas.OnChildChange:Connect(function() Config:UpdateScales() end)
 
 		return Canvas, Object
 	end,
